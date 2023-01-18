@@ -1,0 +1,153 @@
+FROM mcr.microsoft.com/dotnet/sdk:6.0 AS runtime
+# add machine-id as microsoft sdk lacks it
+RUN cat /proc/sys/kernel/random/uuid | sed -e 's/-//g' > /etc/machine-id   \
+    &&  apt-get update && apt-get install -y \
+            libgdiplus
+
+# build
+ARG DOTNET_UNIT_TESTS_RESULTS
+ARG DOTNET_UNIT_TESTS_COVERAGE
+ARG DOTNET_UNIT_TESTS_COVERAGE_REPORT
+# build solution
+WORKDIR /apps
+
+#installing packages
+COPY ["./nuget.config", \
+"./bimeister.sln", \
+"./src/webapi/webapi.csproj", \
+"./src/MeisterSoft.Bim.TasksWorker/MeisterSoft.Bim.TasksWorker.csproj", \
+"./src/pointcloudapi/pointcloudapi.csproj", \
+"./src/notification/notification.csproj", \
+"./src/collisions/collisions.csproj", \
+"./src/Bimeister.Bim.SpatialWebApi.Models/Bimeister.Bim.SpatialWebApi.Models.csproj", \
+"./src/MeisterSoft.Bim.SpatialWebapi/MeisterSoft.Bim.SpatialWebapi.csproj", \
+"./src/MeisterSoft.Bim.SpatialDatabase/MeisterSoft.Bim.SpatialDatabase.csproj", \
+"./src/MeisterSoft.Bim.Webapi.Domain.UnitTests/MeisterSoft.Bim.Webapi.Domain.UnitTests.csproj", \
+"./src/MeisterSoft.Bim.Webapi.Domain.SystemTests/MeisterSoft.Bim.Webapi.Domain.SystemTests.csproj", \
+"./src/MeisterSoft.Bim.ApiTests/MeisterSoft.Bim.ApiTests.csproj", \
+"./src/MeisterSoft.Bim.Shared/MeisterSoft.Bim.Shared.csproj", \
+"./src/MeisterSoft.Bim.Infrastructure/MeisterSoft.Bim.Infrastructure.csproj", \
+"./src/MeisterSoft.Bim.Core/MeisterSoft.Bim.Core.csproj", \
+"./src/MeisterSoft.Bim.WebApi.Clients/MeisterSoft.Bim.WebApi.Clients.csproj", \
+"./src/Bimeister.Bim.WebApi.Models/Bimeister.Bim.WebApi.Models.csproj", \
+"./src/Bimeister.Bim.TaskClient/Bimeister.Bim.TaskClient.csproj", \
+"./src/Bimeister.Bim.MailService.Provider/Bimeister.Bim.MailService.Provider.csproj", \
+"./src/Bimeister.Bim.MailService.WebApi/Bimeister.Bim.MailService.WebApi.csproj", \
+"./src/Bimeister.Bim.MailService/Bimeister.Bim.MailService.csproj", \
+"./src/Bimeister.Bim.GraphDb/Bimeister.Bim.GraphDb.csproj", \
+"./src/Bimeister.Bim.GraphDb.UnitTests/Bimeister.Bim.GraphDb.UnitTests.csproj", \
+"./src/Bimeister.ArchiveBimExemplars.Application/Bimeister.ArchiveBimExemplars.Application.csproj", \
+"./src/Bimeister.ArchiveBimExemplars.Domain/Bimeister.ArchiveBimExemplars.Domain.csproj", \
+"./src/Bimeister.ArchiveBimExemplars.Infrastructure/Bimeister.ArchiveBimExemplars.Infrastructure.csproj", \
+"./src/Bimeister.ArchiveBimExemplars.Models/Bimeister.ArchiveBimExemplars.Models.csproj", \
+"./src/Bimeister.DocumentWorkFlowTasks.Models/Bimeister.DocumentWorkFlowTasks.Models.csproj", \
+"./src/Bimeister.DocumentWorkFlowTasks.Domain/Bimeister.DocumentWorkFlowTasks.Domain.csproj", \
+"./src/Bimeister.DocumentWorkFlowTasks.Infrastructure/Bimeister.DocumentWorkFlowTasks.Infrastructure.csproj", \
+"./src/Bimeister.DocumentWorkFlowTasksReport.Application/Bimeister.DocumentWorkFlowTasksReport.Application.csproj", \
+"./src/Bimeister.ExtensionApi.Application/Bimeister.ExtensionApi.Application.csproj", \
+"./src/Bimeister.ExtensionApi.Infrastructure/Bimeister.ExtensionApi.Infrastructure.csproj", \
+"./src/Bimeister.ExtensionApi.Domain/Bimeister.ExtensionApi.Domain.csproj", \
+"./src/Bimeister.ExtensionApi.Models/Bimeister.ExtensionApi.Models.csproj", \
+"./src/Bimeister.ExtensionApi.Core/Bimeister.ExtensionApi.Core.csproj", \
+"./src/Bimeister.WorkFlowTasks.Infrastructure/Bimeister.WorkFlowTasks.Infrastructure.csproj", \
+"./src/Bimeister.WorkFlowTasks.Models.Shared/Bimeister.WorkFlowTasks.Models.Shared.csproj", \
+"./src/Bimeister.WorkFlowTasksReport.Application/Bimeister.WorkFlowTasksReport.Application.csproj", \
+"./src/Bimeister.WorkFlowTasksReport.Application.Shared/Bimeister.WorkFlowTasksReport.Application.Shared.csproj", \
+"./src/Bimeister.WorkFlowTasksReport.Models/Bimeister.WorkFlowTasksReport.Models.csproj", \
+"./src/BB.MyTasks.Models/BB.MyTasks.Models.csproj", \
+"./src/BB.MyTasks.Application/BB.MyTasks.Application.csproj", \
+"./src/Bimeister.TechnicalFailuresReport.Models/Bimeister.TechnicalFailuresReport.Models.csproj", \
+"./src/Bimeister.TechnicalFailuresReport.Application/Bimeister.TechnicalFailuresReport.Application.csproj", \
+"./src/TestIT.Linker.Console/TestIT.Linker.Console.csproj", \
+"./src/Bimeister.PdfService.Clients/Bimeister.PdfService.Clients.csproj", \
+"./src/Bimeister.Spatium.Providers/Bimeister.Spatium.Providers.csproj", \
+"./src/Bimeister.TechnicalFailureApplicationsReport.Models/Bimeister.TechnicalFailureApplicationsReport.Models.csproj", \
+"./src/Bimeister.TechnicalFailureApplicationsReport.Application/Bimeister.TechnicalFailureApplicationsReport.Application.csproj", \
+"./src/Bimeister.Bim.PerformanceApiTests/Bimeister.Bim.PerformanceApiTests.csproj", \
+"./src/Bimeister.ConstructionControlReport.Models/Bimeister.ConstructionControlReport.Models.csproj", \
+"./src/Bimeister.ConstructionControlReport.Application/Bimeister.ConstructionControlReport.Application.csproj", \
+"./src/Bimeister.Timescale.Infrastructure/Bimeister.Timescale.Infrastructure.csproj", \
+"./src/Bimeister.Archive.Tree.Domain/Bimeister.Archive.Tree.Domain.csproj", \
+"./src/Bimeister.Archive.Tree.Infrastructure/Bimeister.Archive.Tree.Infrastructure.csproj", \
+"./src/Bimeister.Archive.Tree.Models/Bimeister.Archive.Tree.Models.csproj", \
+"./src/Bimeister.BimExemplars.Infrastructure/Bimeister.BimExemplars.Infrastructure.csproj", \
+"./src/Bimeister.BimExemplars.Domain/Bimeister.BimExemplars.Domain.csproj", \
+"./src/BB.EnterpriseAssetManagement.Application/BB.EnterpriseAssetManagement.Application.csproj", \
+"./src/BB.EnterpriseAssetManagement.Domain/BB.EnterpriseAssetManagement.Domain.csproj", \
+"./src/BB.EnterpriseAssetManagement.Infrastructure/BB.EnterpriseAssetManagement.Infrastructure.csproj", \
+"./src/BB.EnterpriseAssetManagement.Exceptions/BB.EnterpriseAssetManagement.Exceptions.csproj", \
+"./src/BB.EnterpriseAssetManagement.Models/BB.EnterpriseAssetManagement.Models.csproj", \
+"./"]
+
+RUN mkdir --parent ./src/webapi/ && mv ./webapi.csproj ./src/webapi/ && \
+mkdir --parent ./src/MeisterSoft.Bim.TasksWorker/ && mv ./MeisterSoft.Bim.TasksWorker.csproj ./src/MeisterSoft.Bim.TasksWorker/ && \
+mkdir --parent ./src/pointcloudapi/ && mv ./pointcloudapi.csproj ./src/pointcloudapi/ && \
+mkdir --parent ./src/notification/ && mv ./notification.csproj ./src/notification/ && \
+mkdir --parent ./src/collisions/ && mv ./collisions.csproj ./src/collisions/ && \
+mkdir --parent ./src/Bimeister.Bim.SpatialWebApi.Models/ && mv ./Bimeister.Bim.SpatialWebApi.Models.csproj ./src/Bimeister.Bim.SpatialWebApi.Models/ && \
+mkdir --parent ./src/MeisterSoft.Bim.SpatialWebapi/ && mv ./MeisterSoft.Bim.SpatialWebapi.csproj ./src/MeisterSoft.Bim.SpatialWebapi/ && \
+mkdir --parent ./src/MeisterSoft.Bim.SpatialDatabase/ && mv ./MeisterSoft.Bim.SpatialDatabase.csproj ./src/MeisterSoft.Bim.SpatialDatabase/ && \
+mkdir --parent ./src/MeisterSoft.Bim.Webapi.Domain.UnitTests/ && mv ./MeisterSoft.Bim.Webapi.Domain.UnitTests.csproj ./src/MeisterSoft.Bim.Webapi.Domain.UnitTests/ && \
+mkdir --parent ./src/MeisterSoft.Bim.Webapi.Domain.SystemTests/ && mv ./MeisterSoft.Bim.Webapi.Domain.SystemTests.csproj ./src/MeisterSoft.Bim.Webapi.Domain.SystemTests/ && \
+mkdir --parent ./src/MeisterSoft.Bim.ApiTests/ && mv ./MeisterSoft.Bim.ApiTests.csproj ./src/MeisterSoft.Bim.ApiTests/ && \
+mkdir --parent ./src/MeisterSoft.Bim.Shared/ && mv ./MeisterSoft.Bim.Shared.csproj ./src/MeisterSoft.Bim.Shared/ && \
+mkdir --parent ./src/MeisterSoft.Bim.Infrastructure/ && mv ./MeisterSoft.Bim.Infrastructure.csproj ./src/MeisterSoft.Bim.Infrastructure/ && \
+mkdir --parent ./src/MeisterSoft.Bim.Core/ && mv ./MeisterSoft.Bim.Core.csproj ./src/MeisterSoft.Bim.Core/ && \
+mkdir --parent ./src/MeisterSoft.Bim.WebApi.Clients/ && mv ./MeisterSoft.Bim.WebApi.Clients.csproj ./src/MeisterSoft.Bim.WebApi.Clients/ && \
+mkdir --parent ./src/Bimeister.Bim.WebApi.Models/ && mv ./Bimeister.Bim.WebApi.Models.csproj ./src/Bimeister.Bim.WebApi.Models/ && \
+mkdir --parent ./src/Bimeister.Bim.TaskClient/ && mv ./Bimeister.Bim.TaskClient.csproj ./src/Bimeister.Bim.TaskClient/ && \
+mkdir --parent ./src/Bimeister.Bim.MailService.Provider/ && mv ./Bimeister.Bim.MailService.Provider.csproj ./src/Bimeister.Bim.MailService.Provider/ && \
+mkdir --parent ./src/Bimeister.Bim.MailService.WebApi/ && mv ./Bimeister.Bim.MailService.WebApi.csproj ./src/Bimeister.Bim.MailService.WebApi/ && \
+mkdir --parent ./src/Bimeister.Bim.MailService/ && mv ./Bimeister.Bim.MailService.csproj ./src/Bimeister.Bim.MailService/ && \
+mkdir --parent ./src/Bimeister.Bim.GraphDb/ && mv ./Bimeister.Bim.GraphDb.csproj ./src/Bimeister.Bim.GraphDb/ && \
+mkdir --parent ./src/Bimeister.Bim.GraphDb.UnitTests/ && mv ./Bimeister.Bim.GraphDb.UnitTests.csproj ./src/Bimeister.Bim.GraphDb.UnitTests/ && \
+mkdir --parent ./src/Bimeister.ArchiveBimExemplars.Application/ && mv ./Bimeister.ArchiveBimExemplars.Application.csproj ./src/Bimeister.ArchiveBimExemplars.Application/ && \
+mkdir --parent ./src/Bimeister.ArchiveBimExemplars.Domain/ && mv ./Bimeister.ArchiveBimExemplars.Domain.csproj ./src/Bimeister.ArchiveBimExemplars.Domain/ && \
+mkdir --parent ./src/Bimeister.ArchiveBimExemplars.Infrastructure/ && mv ./Bimeister.ArchiveBimExemplars.Infrastructure.csproj ./src/Bimeister.ArchiveBimExemplars.Infrastructure/ && \
+mkdir --parent ./src/Bimeister.ArchiveBimExemplars.Models/ && mv ./Bimeister.ArchiveBimExemplars.Models.csproj ./src/Bimeister.ArchiveBimExemplars.Models/ && \
+mkdir --parent ./src/Bimeister.DocumentWorkFlowTasks.Models/ && mv ./Bimeister.DocumentWorkFlowTasks.Models.csproj ./src/Bimeister.DocumentWorkFlowTasks.Models/ && \
+mkdir --parent ./src/Bimeister.DocumentWorkFlowTasks.Domain/ && mv ./Bimeister.DocumentWorkFlowTasks.Domain.csproj ./src/Bimeister.DocumentWorkFlowTasks.Domain/ && \
+mkdir --parent ./src/Bimeister.DocumentWorkFlowTasks.Infrastructure/ && mv ./Bimeister.DocumentWorkFlowTasks.Infrastructure.csproj ./src/Bimeister.DocumentWorkFlowTasks.Infrastructure/ && \
+mkdir --parent ./src/Bimeister.DocumentWorkFlowTasksReport.Application/ && mv ./Bimeister.DocumentWorkFlowTasksReport.Application.csproj ./src/Bimeister.DocumentWorkFlowTasksReport.Application/ && \
+mkdir --parent ./src/Bimeister.ExtensionApi.Application/ && mv ./Bimeister.ExtensionApi.Application.csproj ./src/Bimeister.ExtensionApi.Application/ && \
+mkdir --parent ./src/Bimeister.ExtensionApi.Infrastructure/ && mv ./Bimeister.ExtensionApi.Infrastructure.csproj ./src/Bimeister.ExtensionApi.Infrastructure/ && \
+mkdir --parent ./src/Bimeister.ExtensionApi.Domain/ && mv ./Bimeister.ExtensionApi.Domain.csproj ./src/Bimeister.ExtensionApi.Domain/ && \
+mkdir --parent ./src/Bimeister.ExtensionApi.Models/ && mv ./Bimeister.ExtensionApi.Models.csproj ./src/Bimeister.ExtensionApi.Models/ && \
+mkdir --parent ./src/Bimeister.ExtensionApi.Core/ && mv ./Bimeister.ExtensionApi.Core.csproj ./src/Bimeister.ExtensionApi.Core/ && \
+mkdir --parent ./src/Bimeister.WorkFlowTasks.Infrastructure/ && mv ./Bimeister.WorkFlowTasks.Infrastructure.csproj ./src/Bimeister.WorkFlowTasks.Infrastructure/ && \
+mkdir --parent ./src/Bimeister.WorkFlowTasks.Models.Shared/ && mv ./Bimeister.WorkFlowTasks.Models.Shared.csproj ./src/Bimeister.WorkFlowTasks.Models.Shared/ && \
+mkdir --parent ./src/Bimeister.WorkFlowTasksReport.Application/ && mv ./Bimeister.WorkFlowTasksReport.Application.csproj ./src/Bimeister.WorkFlowTasksReport.Application/ && \
+mkdir --parent ./src/Bimeister.WorkFlowTasksReport.Application.Shared/ && mv ./Bimeister.WorkFlowTasksReport.Application.Shared.csproj ./src/Bimeister.WorkFlowTasksReport.Application.Shared/ && \
+mkdir --parent ./src/Bimeister.WorkFlowTasksReport.Models/ && mv ./Bimeister.WorkFlowTasksReport.Models.csproj ./src/Bimeister.WorkFlowTasksReport.Models/ && \
+mkdir --parent ./src/BB.MyTasks.Models/ && mv ./BB.MyTasks.Models.csproj ./src/BB.MyTasks.Models/ && \
+mkdir --parent ./src/BB.MyTasks.Application/ && mv ./BB.MyTasks.Application.csproj ./src/BB.MyTasks.Application/ && \
+mkdir --parent ./src/Bimeister.TechnicalFailuresReport.Models/ && mv ./Bimeister.TechnicalFailuresReport.Models.csproj ./src/Bimeister.TechnicalFailuresReport.Models/ && \
+mkdir --parent ./src/Bimeister.TechnicalFailuresReport.Application/ && mv ./Bimeister.TechnicalFailuresReport.Application.csproj ./src/Bimeister.TechnicalFailuresReport.Application/ && \
+mkdir --parent ./src/TestIT.Linker.Console/ && mv ./TestIT.Linker.Console.csproj ./src/TestIT.Linker.Console/ && \
+mkdir --parent ./src/Bimeister.PdfService.Clients/ && mv ./Bimeister.PdfService.Clients.csproj ./src/Bimeister.PdfService.Clients/ && \
+mkdir --parent ./src/Bimeister.Spatium.Providers/ && mv ./Bimeister.Spatium.Providers.csproj ./src/Bimeister.Spatium.Providers/ && \
+mkdir --parent ./src/Bimeister.TechnicalFailureApplicationsReport.Models/ && mv ./Bimeister.TechnicalFailureApplicationsReport.Models.csproj ./src/Bimeister.TechnicalFailureApplicationsReport.Models/ && \
+mkdir --parent ./src/Bimeister.TechnicalFailureApplicationsReport.Application/ && mv ./Bimeister.TechnicalFailureApplicationsReport.Application.csproj ./src/Bimeister.TechnicalFailureApplicationsReport.Application/ && \
+mkdir --parent ./src/Bimeister.Bim.PerformanceApiTests/ && mv ./Bimeister.Bim.PerformanceApiTests.csproj ./src/Bimeister.Bim.PerformanceApiTests/ && \
+mkdir --parent ./src/Bimeister.ConstructionControlReport.Models/ && mv ./Bimeister.ConstructionControlReport.Models.csproj ./src/Bimeister.ConstructionControlReport.Models/ && \
+mkdir --parent ./src/Bimeister.ConstructionControlReport.Application/ && mv ./Bimeister.ConstructionControlReport.Application.csproj ./src/Bimeister.ConstructionControlReport.Application/ && \
+mkdir --parent ./src/BB.EnterpriseAssetManagement.Application/ && mv ./BB.EnterpriseAssetManagement.Application.csproj ./src/BB.EnterpriseAssetManagement.Application/ && \
+mkdir --parent ./src/BB.EnterpriseAssetManagement.Domain/ && mv ./BB.EnterpriseAssetManagement.Domain.csproj ./src/BB.EnterpriseAssetManagement.Domain/ && \
+mkdir --parent ./src/BB.EnterpriseAssetManagement.Infrastructure/ && mv ./BB.EnterpriseAssetManagement.Infrastructure.csproj ./src/BB.EnterpriseAssetManagement.Infrastructure/ && \
+mkdir --parent ./src/BB.EnterpriseAssetManagement.Exceptions/ && mv ./BB.EnterpriseAssetManagement.Exceptions.csproj ./src/BB.EnterpriseAssetManagement.Exceptions/ && \
+mkdir --parent ./src/BB.EnterpriseAssetManagement.Models/ && mv ./BB.EnterpriseAssetManagement.Models.csproj ./src/BB.EnterpriseAssetManagement.Models/ && \
+mkdir --parent ./src/Bimeister.Timescale.Infrastructure/ && mv ./Bimeister.Timescale.Infrastructure.csproj ./src/Bimeister.Timescale.Infrastructure/ && \
+mkdir --parent ./src/Bimeister.Archive.Tree.Domain/ && mv ./Bimeister.Archive.Tree.Domain.csproj ./src/Bimeister.Archive.Tree.Domain/ && \
+mkdir --parent ./src/Bimeister.Archive.Tree.Infrastructure/ && mv ./Bimeister.Archive.Tree.Infrastructure.csproj ./src/Bimeister.Archive.Tree.Infrastructure/ && \
+mkdir --parent ./src/Bimeister.Archive.Tree.Models/ && mv ./Bimeister.Archive.Tree.Models.csproj ./src/Bimeister.Archive.Tree.Models/ && \
+mkdir --parent ./src/Bimeister.BimExemplars.Infrastructure/ && mv ./Bimeister.BimExemplars.Infrastructure.csproj ./src/Bimeister.BimExemplars.Infrastructure/ && \
+mkdir --parent ./src/Bimeister.BimExemplars.Domain/ && mv ./Bimeister.BimExemplars.Domain.csproj ./src/Bimeister.BimExemplars.Domain/
+
+RUN dotnet restore --force-evaluate --disable-parallel --configfile ./nuget.config
+
+COPY . .
+RUN dotnet publish --configuration Release \
+	&& dotnet test src/MeisterSoft.Bim.Webapi.Domain.UnitTests/ --no-build -c Release --collect:"XPlat Code Coverage" --settings:"src/MeisterSoft.Bim.Webapi.Domain.UnitTests/coverlet.runsettings" -r ${DOTNET_UNIT_TESTS_COVERAGE} --logger:"junit;LogFilePath=${DOTNET_UNIT_TESTS_RESULTS}" \
+	&& dotnet tool install --tool-path . dotnet-reportgenerator-globaltool --version 5.1.10 \
+	&& ./reportgenerator -reports:"${DOTNET_UNIT_TESTS_COVERAGE}/*/coverage.cobertura.xml" -targetdir:"${DOTNET_UNIT_TESTS_COVERAGE_REPORT}" -reporttypes:"Html;TextSummary" \
+	&& find . -name '*.pdb' -delete
